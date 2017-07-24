@@ -3,6 +3,9 @@ import * as Promise from 'bluebird'
 import getConfig from '../config/database'
 import * as rawModels from './models'
 import { getCredentials } from '../lib/credentials'
+import { makeFromLogger } from '../lib/logger'
+
+const makeLogger = makeFromLogger('database')
 
 const config = getConfig()
 
@@ -15,6 +18,8 @@ const defaults = {
 let database = null
 
 export function getDatabase () {
+  const logger = makeLogger({ operation: 'getDatabase' })
+
   if (database) {
     return Promise.resolve(database)
   }
@@ -41,6 +46,12 @@ export function getDatabase () {
         .map(associateModels)
 
       return database
+    })
+    .tap(() => {
+      logger.info({ status: 'succeeded' })
+    })
+    .tapCatch((err) => {
+      logger.error({ status: 'failed', metadata: { err } })
     })
 }
 

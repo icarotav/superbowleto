@@ -1,3 +1,4 @@
+import * as Promise from 'bluebird'
 import { memoize, prop } from 'ramda'
 import { getEnv } from '../../config'
 import { makeFromLogger } from '../../lib/logger'
@@ -26,11 +27,12 @@ export const getCredentials = memoize((key: string): Promise<string> => {
     return Promise.resolve(prop(credstashKey, localCredstashTable))
   }
 
-  return credstash.getSecret({
-    name: credstashKey
-  })
-    .catch((err) => {
+  return Promise.resolve({ name: credstashKey })
+    .then(credstash.getSecret)
+    .tap(() => {
+      logger.info({ status: 'succeeded', metadata: { credstashKey } })
+    })
+    .tapCatch((err) => {
       logger.error({ status: 'failed', metadata: { err } })
-      return Promise.reject(err)
     })
 })
